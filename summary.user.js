@@ -11,9 +11,6 @@
 
 // OpenAPIのキーは、Tampermonkeyの設定画面にある「値」に設定しておく
 
-// TODO logとして結果を残す
-// TODO 要約を1行にする
-
 "use strict";
 
 /**
@@ -147,7 +144,7 @@ async function summary() {
 
   try {
     const summary = await getSummary(pageContent);
-    textArea.innerHTML = summary.replace(/\n/g, "<br>");
+    textArea.innerHTML = "GPT要約: " + summary;
   } catch (error) {
     textArea.textContent = "要約の取得に失敗しました。";
   }
