@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         GPT要約
-// @namespace    http://xxxx/gpt-summary
+// @namespace    https://github.com/taktamur/violentmonkey/blob/main/summary.user.js
 // @version      1.2
 // @description  GPTのAPIを使って、ページの要約を行う
 // @author       taktamur@gmail.com
@@ -15,27 +15,33 @@
 // TODO 要約を1行にする
 
 "use strict";
-// GPT APIを使用して要約を取得する関数
+
+/**
+ * GPTで要約する
+ * @param {*} article
+ * @returns
+ */
 async function getSummary(article) {
   const API_KEY = GM_getValue("OPENAI_API_KEY");
+  const MODEL = "gpt-4o-mini";
+  const SYSTEM_CONTENT =
+    "これからwebページのテキストを投げます。その内容を300文字程度に要約してください。キーワードっぽい箇所は、[]で囲ってください。";
+
   console.log(article.length);
   const apiUrl = "https://api.openai.com/v1/chat/completions";
 
   const requestBody = {
-    model: "gpt-4o-mini",
+    model: MODEL,
     messages: [
       {
         role: "system",
-        content:
-          "これからwebページのテキストを投げます。その内容を箇条書きで要約してください。" +
-          "要約は箇条書きで、５項目程度としてください\n",
+        content: SYSTEM_CONTENT,
       },
       {
         role: "user",
         content: article,
       },
     ],
-    max_tokens: 1000,
   };
 
   try {
@@ -61,6 +67,9 @@ async function getSummary(article) {
   }
 }
 
+/**
+ * 要約を取得して表示する
+ */
 async function summary() {
   // 要約結果を表示するエリアを作成
   const summaryDiv = document.createElement("div");
@@ -76,30 +85,39 @@ async function summary() {
   summaryDiv.style.display = "none";
   summaryDiv.style.zIndex = 1000;
 
+  // テキストを貼るエリアを作成
+  const textArea = document.createElement("div");
+  textArea.id = "summary-text";
+  summaryDiv.appendChild(textArea);
+
+  // ボタンを配置するエリアを作成
+  const buttonArea = document.createElement("div");
+  buttonArea.style.marginTop = "10px";
+  summaryDiv.appendChild(buttonArea);
+
   // 閉じるボタンを作成
   const closeButton = document.createElement("button");
   closeButton.textContent = "閉じる";
-  closeButton.style.display = "block";
-  closeButton.style.marginTop = "10px";
+  closeButton.style.display = "inline-block"; // block から inline-block に変更
   closeButton.style.backgroundColor = "#f44336";
   closeButton.style.color = "white";
   closeButton.style.border = "none";
   closeButton.style.padding = "5px";
   closeButton.style.cursor = "pointer";
+  buttonArea.appendChild(closeButton);
 
   // コピーするボタンを作成
   const copyButton = document.createElement("button");
   copyButton.textContent = "コピー";
-  copyButton.style.display = "block";
-  copyButton.style.marginTop = "10px";
+  copyButton.style.display = "inline-block"; // block から inline-block に変更
+  copyButton.style.marginLeft = "10px";
   copyButton.style.backgroundColor = "#008CBA";
   copyButton.style.color = "white";
   copyButton.style.border = "none";
   copyButton.style.padding = "5px";
   copyButton.style.cursor = "pointer";
+  buttonArea.appendChild(copyButton);
 
-  summaryDiv.appendChild(copyButton);
-  summaryDiv.appendChild(closeButton);
   document.body.appendChild(summaryDiv);
 
   // 閉じるボタンの処理
@@ -109,7 +127,9 @@ async function summary() {
 
   // コピーするボタンの処理
   copyButton.addEventListener("click", () => {
-    const textToCopy = summaryDiv.innerText.replace("コピー閉じる", "").trim(); // 要約テキストを取得し、不要なボタンテキストを削除
+    // textArea内のテキストを取得
+    const textToCopy = textArea.innerText.trim();
+    console.dir(textToCopy);
     navigator.clipboard
       .writeText(textToCopy)
       .then(() => {
@@ -121,18 +141,15 @@ async function summary() {
   });
 
   const pageContent = document.body.innerText; // ページ全体のテキストを取得
-  summaryDiv.textContent = "要約を取得中...";
+
+  textArea.textContent = "要約を取得中...";
   summaryDiv.style.display = "block";
 
   try {
     const summary = await getSummary(pageContent);
-    summaryDiv.innerHTML = summary.replace(/\n/g, "<br>");
-    summaryDiv.appendChild(copyButton); // コピーするボタンを再度追加
-    summaryDiv.appendChild(closeButton); // 閉じるボタンを再度追加
+    textArea.innerHTML = summary.replace(/\n/g, "<br>");
   } catch (error) {
-    summaryDiv.textContent = "要約の取得に失敗しました。";
-    summaryDiv.appendChild(copyButton); // エラーの場合もコピーするボタンを追加
-    summaryDiv.appendChild(closeButton); // エラーの場合も閉じるボタンを追加
+    textArea.textContent = "要約の取得に失敗しました。";
   }
 }
 
